@@ -8,6 +8,7 @@ VERSION = "1.0"
 FIELDS = {"protocol_version", "command_id", "target", "action", "arguments"}
 ARGS = {"type_text": {"text"}, "press": {"key"}, "hotkey": {"keys"},
         "click": {"x", "y"}, "move": {"x", "y"}, "scroll": {"amount"},
+        "drag": {"x1", "y1", "x2", "y2"},
         "write_file": {"path", "text"}, "read_file": {"path"}}
 
 class ProtocolError(ValueError):
@@ -54,6 +55,8 @@ class Command:
             raise ProtocolError("invalid_arguments", "Invalid hotkey")
         if action in ("click", "move") and any(type(args[k]) is not int or args[k] < 0 for k in ("x", "y")):
             raise ProtocolError("invalid_arguments", "Invalid coordinates")
+        if action == "drag" and any(type(args[k]) is not int or args[k] < 0 for k in ("x1", "y1", "x2", "y2")):
+            raise ProtocolError("invalid_arguments", "Invalid drag coordinates")
         if action == "scroll" and (type(args["amount"]) is not int or not -20 <= args["amount"] <= 20):
             raise ProtocolError("invalid_arguments", "Invalid scroll")
         if target == "android" and action not in ("type_text", "click"):
