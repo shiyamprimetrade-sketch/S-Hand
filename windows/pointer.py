@@ -1,6 +1,4 @@
 """Bounded mouse operations; check cancellation before every input event."""
-import math
-import time
 
 class PointerError(ValueError):
     pass
@@ -45,11 +43,11 @@ def drag(driver, x1, y1, x2, y2, is_armed=lambda: True, steps=12):
         raise PointerError("Invalid drag step count")
     ensure_armed(is_armed)
     driver.moveTo(x1, y1)
-    down = False
+    down_attempted = False
     try:
         ensure_armed(is_armed)
+        down_attempted = True
         driver.mouseDown()
-        down = True
         for i in range(1, steps + 1):
             ensure_armed(is_armed)
             ratio = i / steps
@@ -57,6 +55,6 @@ def drag(driver, x1, y1, x2, y2, is_armed=lambda: True, steps=12):
             y = round(y1 + (y2 - y1) * ratio)
             driver.moveTo(x, y)
     finally:
-        if down:
+        if down_attempted:
             driver.mouseUp()
     return {"from": [x1, y1], "to": [x2, y2], "steps": steps}
