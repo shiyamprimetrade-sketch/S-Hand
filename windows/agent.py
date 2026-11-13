@@ -77,9 +77,9 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size))
             command = None
             command = Command.parse(payload)
-                if command.target != "windows":
-                    raise ProtocolError("invalid_target", "Windows agent cannot execute Android actions")
-                payload = command.legacy_action()
+            if command.target != "windows":
+                raise ProtocolError("invalid_target", "Windows agent cannot execute Android actions")
+            payload = command.legacy_action()
             replay_state = JOURNAL.reserve(command)
             if replay_state != "new":
                 return self.respond(409, receipt(command.command_id, "rejected", "duplicate_command" if replay_state == "duplicate" else "command_id_conflict"))
