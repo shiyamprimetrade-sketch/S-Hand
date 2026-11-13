@@ -25,17 +25,11 @@ def execute(action, driver):
         from keyboard import type_exact
         return {"ok": True, "action": name, **type_exact(value, driver, action.get("expected_window"))}
     elif name == "press":
-        key = action.get("key")
-        if not isinstance(key, str) or key not in driver.KEYBOARD_KEYS:
-            raise ValueError("Unsupported key")
-        driver.press(key)
+        from key_actions import press_key
+        press_key(driver, action.get("key"))
     elif name == "hotkey":
-        keys = action.get("keys")
-        if not isinstance(keys, list) or not 1 <= len(keys) <= 5 or any(
-            not isinstance(k, str) or k not in driver.KEYBOARD_KEYS for k in keys
-        ):
-            raise ValueError("Invalid shortcut")
-        driver.hotkey(*keys)
+        from key_actions import chord
+        chord(driver, action.get("keys"))
     elif name in ("click", "move"):
         x, y = action.get("x"), action.get("y")
         width, height = driver.size()
