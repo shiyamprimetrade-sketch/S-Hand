@@ -9,6 +9,9 @@ MAX_BODY = 2_200_000
 WORKSPACE_ROOT = os.environ.get('SHAND_WORKSPACE')
 TOKEN = os.environ.get("SHAND_TOKEN") or secrets.token_urlsafe(32)
 LOCK = threading.Lock()
+from protocol import Command, ProtocolError, receipt
+from replay import ReplayGuard
+REPLAY = ReplayGuard()
 
 
 def execute(action, driver):
@@ -71,6 +74,16 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < size <= MAX_BODY:
                 return self.respond(413, {"ok": False, "error": "Invalid body size"})
             payload = json.loads(self.rfile.read(size))
+            command = None
+            if "protocol_version" in payload or "command_id" in payload:
+                command = Command.parse(payload)
+                if command.target != "windows":
+                    raise ProtocolError("invalid_target", "Windows agent cannot execute Android actions")
+                payload = command.legacy_action()
+            if command is not None:
+                replay_state = REPLAY.claim(command)
+                if replay_state != "new":
+                    return self.respond(409, receipt(command.command_id, "rejected", "duplicate_command" if replay_state == "duplicate" else "command_id_conflict"))
             if payload.get("action") in ("write_file", "read_file"):
                 if not WORKSPACE_ROOT:
                     raise ValueError("Set SHAND_WORKSPACE to enable file operations")
@@ -86,7 +99,9 @@ class Handler(BaseHTTPRequestHandler):
                 pyautogui.FAILSAFE = True
                 with LOCK:
                     result = execute(payload, pyautogui)
-            return self.respond(200, result)
+            return self.respond(200, receipt(command.command_id, "completed") if command is not None else result)
+        except ProtocolError as exc:
+            return self.respond(400, receipt("unknown", "rejected", exc.code, str(exc)))
         except (ValueError, KeyError, json.JSONDecodeError) as exc:
             return self.respond(400, {"ok": False, "error": str(exc)})
         except Exception as exc:
