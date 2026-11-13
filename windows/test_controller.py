@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 import agent
 from journal import Journal
 
@@ -51,7 +51,7 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(h.code, 423)
 
     def test_plan_executes_once(self):
-        with patch("agent.execute", return_value={"ok": True}) as execute:
+        with patch.dict("sys.modules", {"pyautogui": Mock()}), patch("agent.execute", return_value={"ok": True}) as execute:
             h = FakeHandler("/plan", agent.TOKEN, plan())
             h.do_POST()
             self.assertEqual(h.code, 200)
