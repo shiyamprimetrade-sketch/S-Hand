@@ -38,6 +38,15 @@ class SchedulerTests(unittest.TestCase):
         results = PlanRunner(self.journal, execute, lambda: armed[0]).run(plan())
         self.assertEqual([r.status for r in results], ["completed", "stopped"])
 
+    def test_stop_during_step_is_recorded(self):
+        armed = [True]
+        def interrupted(command):
+            armed[0] = False
+            raise RuntimeError("Emergency stop activated")
+        results = PlanRunner(self.journal, interrupted, lambda: armed[0]).run(plan())
+        self.assertEqual([r.status for r in results], ["stopped"])
+        self.assertEqual(self.journal.get("step-0")["detail"], "emergency_stop")
+
     def test_fail_stops_plan(self):
         def fail(command):
             raise OSError("device")
