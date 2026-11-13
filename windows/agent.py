@@ -5,7 +5,8 @@ import secrets
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-MAX_BODY = 110_000
+MAX_BODY = 2_200_000
+WORKSPACE_ROOT = os.environ.get('SHAND_WORKSPACE')
 TOKEN = os.environ.get("SHAND_TOKEN") or secrets.token_urlsafe(32)
 LOCK = threading.Lock()
 
@@ -70,10 +71,21 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < size <= MAX_BODY:
                 return self.respond(413, {"ok": False, "error": "Invalid body size"})
             payload = json.loads(self.rfile.read(size))
-            import pyautogui
-            pyautogui.FAILSAFE = True
-            with LOCK:
-                result = execute(payload, pyautogui)
+            if payload.get("action") in ("write_file", "read_file"):
+                if not WORKSPACE_ROOT:
+                    raise ValueError("Set SHAND_WORKSPACE to enable file operations")
+                from workspace import Workspace, WorkspaceError
+                workspace = Workspace(WORKSPACE_ROOT)
+                with LOCK:
+                    if payload["action"] == "write_file":
+                        result = workspace.write(payload.get("path"), payload.get("text"))
+                    else:
+                        result = workspace.read(payload.get("path"))
+            else:
+                import pyautogui
+                pyautogui.FAILSAFE = True
+                with LOCK:
+                    result = execute(payload, pyautogui)
             return self.respond(200, result)
         except (ValueError, KeyError, json.JSONDecodeError) as exc:
             return self.respond(400, {"ok": False, "error": str(exc)})
