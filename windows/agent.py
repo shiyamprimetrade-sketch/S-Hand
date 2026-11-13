@@ -61,7 +61,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        if self.path not in ("/action", "/stop"):
+        if self.path not in ("/action", "/stop", "/plan"):
             return self.respond(404, {"ok": False, "error": "Unknown route"})
         provided = self.headers.get("X-S-Hand-Token", "")
         if not secrets.compare_digest(provided, TOKEN):
@@ -76,6 +76,30 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < size <= MAX_BODY:
                 return self.respond(413, {"ok": False, "error": "Invalid body size"})
             payload = json.loads(self.rfile.read(size))
+            if self.path == "/plan":
+                from plans import Plan
+                from scheduler import PlanRunner
+                plan = Plan.parse(payload)
+                def run_step(command):
+                    action = command.legacy_action()
+                    if action["action"] in ("write_file", "read_file"):
+                        if not WORKSPACE_ROOT:
+                            raise ValueError("Set SHAND_WORKSPACE to enable file operations")
+                        from workspace import Workspace
+                        workspace = Workspace(WORKSPACE_ROOT)
+                        if action["action"] == "write_file":
+                            return workspace.write(action["path"], action["text"])
+                        return workspace.read(action["path"])
+                    import pyautogui
+                    pyautogui.FAILSAFE = True
+                    return execute(action, pyautogui, is_armed=ARMED.is_set)
+                with LOCK:
+                    if not ARMED.is_set():
+                        return self.respond(423, {"ok": False, "error": "Emergency stop activated"})
+                    results = PlanRunner(JOURNAL, run_step, ARMED.is_set).run(plan)
+                return self.respond(200, {"plan_id": plan.plan_id, "results": [
+                    {"command_id": r.command_id, "status": r.status, "detail": r.detail}
+                    for r in results]})
             command = None
             command = Command.parse(payload)
             if command.target != "windows":
