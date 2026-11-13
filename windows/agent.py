@@ -22,7 +22,8 @@ def execute(action, driver):
         value = action.get("text")
         if not isinstance(value, str) or len(value) > 100000:
             raise ValueError("Invalid text")
-        driver.write(value, interval=0.001)
+        from keyboard import type_exact
+        return {"ok": True, "action": name, **type_exact(value, driver, action.get("expected_window"))}
     elif name == "press":
         key = action.get("key")
         if not isinstance(key, str) or key not in driver.KEYBOARD_KEYS:
