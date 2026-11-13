@@ -24,6 +24,7 @@ class Journal:
 
     def reserve(self, command):
         with self.lock, self._db() as db:
+            db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT fingerprint, status FROM commands WHERE command_id=?",
                              (command.command_id,)).fetchone()
             if row:
