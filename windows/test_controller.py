@@ -63,6 +63,14 @@ class ControllerTests(unittest.TestCase):
             self.assertEqual(again.data["results"][0]["status"], "blocked")
             execute.assert_called_once()
 
+    def test_failed_plan_reports_failure(self):
+        with patch.dict("sys.modules", {"pyautogui": Mock()}), patch("agent.execute", side_effect=RuntimeError("driver failed")):
+            h = FakeHandler("/plan", agent.TOKEN, plan())
+            h.do_POST()
+            self.assertEqual(h.code, 500)
+            self.assertEqual(h.data["status"], "failed")
+            self.assertEqual(agent.JOURNAL.get("step-1")["status"], "failed")
+
     def test_bad_plan_rejected(self):
         h = FakeHandler("/plan", agent.TOKEN, {"plan_id": "invalid", "commands": []})
         h.do_POST()
