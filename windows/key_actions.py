@@ -1,5 +1,4 @@
 """Safe keyboard shortcut execution with guaranteed modifier release."""
-from contextlib import contextmanager
 
 class KeyActionError(ValueError):
     pass
@@ -30,11 +29,13 @@ def press_key(driver, key):
     driver.press(key)
     return {"key": key}
 
-def chord(driver, keys):
+def chord(driver, keys, is_armed=lambda: True):
     keys = validate_keys(keys)
     pressed = []
     try:
         for key in keys:
+            if not is_armed():
+                raise RuntimeError('Emergency stop activated')
             driver.keyDown(key)
             pressed.append(key)
     finally:
