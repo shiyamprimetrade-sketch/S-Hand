@@ -19,6 +19,14 @@ class KeyActionTests(unittest.TestCase):
             chord(driver, ["ctrl", "s"])
         driver.keyUp.assert_called_once_with("ctrl")
 
+    def test_emergency_stop_releases_held_modifier(self):
+        driver = Mock()
+        checks = iter([True, False])
+        with self.assertRaises(RuntimeError):
+            chord(driver, ["ctrl", "s"], is_armed=lambda: next(checks))
+        driver.keyDown.assert_called_once_with("ctrl")
+        driver.keyUp.assert_called_once_with("ctrl")
+
     def test_reject_duplicates(self):
         with self.assertRaises(KeyActionError):
             chord(Mock(), ["ctrl", "ctrl", "s"])
