@@ -35,7 +35,7 @@ class PointerTests(unittest.TestCase):
         self.assertEqual(self.driver.moveTo.call_args.args, (50, 60))
 
     def test_drag_cancel_releases_button(self):
-        states = iter([True, True, False])
+        states = iter([True, True, True, False])
         with self.assertRaises(RuntimeError):
             drag(self.driver, 1, 2, 50, 60, steps=4, is_armed=lambda: next(states))
         self.driver.mouseUp.assert_called_once()
