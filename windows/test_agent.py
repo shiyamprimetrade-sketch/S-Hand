@@ -17,7 +17,7 @@ class ActionTests(unittest.TestCase):
 
     def test_click(self):
         execute({"action": "click", "x": 10, "y": 20}, self.driver)
-        self.driver.click.assert_called_once_with(x=10, y=20)
+        self.driver.click.assert_called_once_with(x=10, y=20, clicks=1, interval=0)
 
     def test_hotkey(self):
         execute({"action": "hotkey", "keys": ["ctrl", "s"]}, self.driver)
