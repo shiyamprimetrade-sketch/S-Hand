@@ -41,6 +41,14 @@ class ProtocolTests(unittest.TestCase):
         guard = ReplayGuard()
         guard.claim(Command.parse(example()))
         self.assertEqual(guard.claim(Command.parse(example(arguments={"text": "different"})), "conflict")
+    def test_drag_valid(self):
+        cmd = Command.parse(example(action="drag", arguments={"x1": 1, "y1": 2, "x2": 3, "y2": 4}))
+        self.assertEqual(cmd.action, "drag")
+
+    def test_drag_rejects_boolean(self):
+        with self.assertRaises(ProtocolError):
+            Command.parse(example(action="drag", arguments={"x1": True, "y1": 2, "x2": 3, "y2": 4}))
+
     def test_receipt(self):
         self.assertEqual(receipt("task-1", "completed")["status"], "completed")
 
