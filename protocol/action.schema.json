@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "S-Hand action",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "action"
+  ],
+  "properties": {
+    "action": {
+      "enum": [
+        "type_text",
+        "press",
+        "hotkey",
+        "click",
+        "move",
+        "scroll",
+        "swipe",
+        "back",
+        "home"
+      ]
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "key": {
+      "type": "string"
+    },
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5
+    },
+    "x": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "y": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "end_x": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "end_y": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": -20,
+      "maximum": 20
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 5000
+    }
+  }
+}
