@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock
 from agent import execute
+from unittest.mock import patch
 
 
 class ActionTests(unittest.TestCase):
@@ -10,8 +11,9 @@ class ActionTests(unittest.TestCase):
         self.driver.size.return_value = (1920, 1080)
 
     def test_type(self):
-        execute({"action": "type_text", "text": "hello"}, self.driver)
-        self.driver.write.assert_called_once()
+        with patch("keyboard.type_exact", return_value={"method": "clipboard_paste", "characters": 5}) as typing:
+            execute({"action": "type_text", "text": "hello"}, self.driver)
+            typing.assert_called_once_with("hello", self.driver, None)
 
     def test_click(self):
         execute({"action": "click", "x": 10, "y": 20}, self.driver)
