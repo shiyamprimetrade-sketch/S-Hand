@@ -5,7 +5,6 @@ Interrupted commands are never replayed automatically.
 """
 from dataclasses import dataclass
 from plans import Plan
-from journal import Journal
 
 class PlanExecutionError(RuntimeError):
     pass
