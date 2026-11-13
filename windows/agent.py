@@ -10,8 +10,8 @@ WORKSPACE_ROOT = os.environ.get('SHAND_WORKSPACE')
 TOKEN = os.environ.get("SHAND_TOKEN") or secrets.token_urlsafe(32)
 LOCK = threading.Lock()
 from protocol import Command, ProtocolError, receipt
-from replay import ReplayGuard
-REPLAY = ReplayGuard()
+from journal import Journal
+JOURNAL = Journal(os.environ.get('SHAND_JOURNAL', 'shand-commands.sqlite3'))
 
 
 def execute(action, driver):
@@ -81,7 +81,7 @@ class Handler(BaseHTTPRequestHandler):
                     raise ProtocolError("invalid_target", "Windows agent cannot execute Android actions")
                 payload = command.legacy_action()
             if command is not None:
-                replay_state = REPLAY.claim(command)
+                replay_state = JOURNAL.reserve(command)
                 if replay_state != "new":
                     return self.respond(409, receipt(command.command_id, "rejected", "duplicate_command" if replay_state == "duplicate" else "command_id_conflict"))
             if payload.get("action") in ("write_file", "read_file"):
@@ -99,12 +99,18 @@ class Handler(BaseHTTPRequestHandler):
                 pyautogui.FAILSAFE = True
                 with LOCK:
                     result = execute(payload, pyautogui)
+            if command is not None:
+                JOURNAL.finish(command.command_id, "completed")
             return self.respond(200, receipt(command.command_id, "completed") if command is not None else result)
         except ProtocolError as exc:
             return self.respond(400, receipt("unknown", "rejected", exc.code, str(exc)))
         except (ValueError, KeyError, json.JSONDecodeError) as exc:
+            if "command" in locals() and command is not None and "replay_state" in locals() and replay_state == "new":
+                JOURNAL.finish(command.command_id, "failed", str(exc))
             return self.respond(400, {"ok": False, "error": str(exc)})
         except Exception as exc:
+            if "command" in locals() and command is not None and "replay_state" in locals() and replay_state == "new":
+                JOURNAL.finish(command.command_id, "failed", type(exc).__name__)
             return self.respond(500, {"ok": False, "error": type(exc).__name__})
 
     def log_message(self, fmt, *args):
