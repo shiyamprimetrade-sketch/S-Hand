@@ -32,7 +32,7 @@ class Command:
         if not isinstance(cid, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", cid):
             raise ProtocolError("invalid_id", "Invalid command identifier")
         target, action, args = payload["target"], payload["action"], payload["arguments"]
-        if target not in ("windows", "android"):
+        if not isinstance(target, str) or target not in ("windows", "android"):
             raise ProtocolError("invalid_target", "Unknown target")
         if not isinstance(action, str) or action not in ARGS:
             raise ProtocolError("unsupported_action", "Unknown action")
