@@ -36,8 +36,10 @@ class Command:
             raise ProtocolError("invalid_target", "Unknown target")
         if not isinstance(action, str) or action not in ARGS:
             raise ProtocolError("unsupported_action", "Unknown action")
-        if not isinstance(args, dict) or set(args) != ARGS[action]:
+        if not isinstance(args, dict) or (action == "type_text" and not ({"text"} <= set(args) <= {"text", "expected_window"})) or (action != "type_text" and set(args) != ARGS[action]):
             raise ProtocolError("invalid_arguments", "Wrong action arguments")
+        if action == "type_text" and "expected_window" in args and (not isinstance(args["expected_window"], str) or not 1 <= len(args["expected_window"]) <= 200):
+            raise ProtocolError("invalid_arguments", "Invalid window target")
         if action in ("type_text", "write_file"):
             value = args["text"]
             if not isinstance(value, str) or len(value.encode("utf-8")) > 2_000_000:
