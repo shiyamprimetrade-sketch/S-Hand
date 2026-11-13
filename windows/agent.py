@@ -34,20 +34,18 @@ def execute(action, driver, is_armed=lambda: True):
     elif name == "hotkey":
         from key_actions import chord
         chord(driver, action.get("keys"), is_armed=is_armed)
-    elif name in ("click", "move"):
-        x, y = action.get("x"), action.get("y")
-        width, height = driver.size()
-        if not all(isinstance(v, int) and not isinstance(v, bool) for v in (x, y)) or not (0 <= x < width and 0 <= y < height):
-            raise ValueError("Coordinates outside display")
+    elif name in ("click", "move", "scroll", "drag"):
+        import pointer
         if name == "click":
-            driver.click(x=x, y=y)
+            result = pointer.click(driver, action.get("x"), action.get("y"), is_armed=is_armed)
+        elif name == "move":
+            result = pointer.move(driver, action.get("x"), action.get("y"), is_armed=is_armed)
+        elif name == "scroll":
+            result = pointer.scroll(driver, action.get("amount"), is_armed=is_armed)
         else:
-            driver.moveTo(x=x, y=y)
-    elif name == "scroll":
-        amount = action.get("amount")
-        if not isinstance(amount, int) or isinstance(amount, bool) or not -20 <= amount <= 20:
-            raise ValueError("Invalid scroll amount")
-        driver.scroll(amount)
+            result = pointer.drag(driver, action.get("x1"), action.get("y1"),
+                                  action.get("x2"), action.get("y2"), is_armed=is_armed)
+        return {"ok": True, "action": name, **result}
     else:
         raise ValueError("Unsupported action")
     return {"ok": True, "action": name}
