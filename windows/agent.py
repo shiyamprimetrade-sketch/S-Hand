@@ -97,7 +97,9 @@ class Handler(BaseHTTPRequestHandler):
                     if not ARMED.is_set():
                         return self.respond(423, {"ok": False, "error": "Emergency stop activated"})
                     results = PlanRunner(JOURNAL, run_step, ARMED.is_set).run(plan)
-                return self.respond(200, {"plan_id": plan.plan_id, "results": [
+                final_status = results[-1].status if results else "failed"
+                http_status = 200 if final_status == "completed" else (409 if final_status == "blocked" else 423 if final_status == "stopped" else 500)
+                return self.respond(http_status, {"plan_id": plan.plan_id, "status": final_status, "results": [
                     {"command_id": r.command_id, "status": r.status, "detail": r.detail}
                     for r in results]})
             command = None
