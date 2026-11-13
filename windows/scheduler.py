@@ -38,8 +38,10 @@ class PlanRunner:
                     raise PlanExecutionError("Emergency stop activated")
                 output = self.executor(command)
             except Exception as exc:
-                self.journal.finish(command.command_id, "failed", type(exc).__name__)
-                results.append(StepResult(command.command_id, "failed", type(exc).__name__))
+                stopped = not self.is_armed()
+                reason = "emergency_stop" if stopped else type(exc).__name__
+                self.journal.finish(command.command_id, "failed", reason)
+                results.append(StepResult(command.command_id, "stopped" if stopped else "failed", reason))
                 break
             else:
                 self.journal.finish(command.command_id, "completed")
