@@ -59,6 +59,7 @@ class ControllerTests(unittest.TestCase):
             execute.assert_called_once()
             again = FakeHandler("/plan", agent.TOKEN, plan())
             again.do_POST()
+            self.assertEqual(again.code, 409)
             self.assertEqual(again.data["results"][0]["status"], "blocked")
             execute.assert_called_once()
 
