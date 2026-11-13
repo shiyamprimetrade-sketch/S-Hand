@@ -63,7 +63,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        if self.path != "/action":
+        if self.path not in ("/action", "/stop"):
             return self.respond(404, {"ok": False, "error": "Unknown route"})
         provided = self.headers.get("X-S-Hand-Token", "")
         if not secrets.compare_digest(provided, TOKEN):
