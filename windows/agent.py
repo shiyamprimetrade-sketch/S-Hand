@@ -75,15 +75,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(413, {"ok": False, "error": "Invalid body size"})
             payload = json.loads(self.rfile.read(size))
             command = None
-            if "protocol_version" in payload or "command_id" in payload:
-                command = Command.parse(payload)
+            command = Command.parse(payload)
                 if command.target != "windows":
                     raise ProtocolError("invalid_target", "Windows agent cannot execute Android actions")
                 payload = command.legacy_action()
-            if command is not None:
-                replay_state = JOURNAL.reserve(command)
-                if replay_state != "new":
-                    return self.respond(409, receipt(command.command_id, "rejected", "duplicate_command" if replay_state == "duplicate" else "command_id_conflict"))
+            replay_state = JOURNAL.reserve(command)
+            if replay_state != "new":
+                return self.respond(409, receipt(command.command_id, "rejected", "duplicate_command" if replay_state == "duplicate" else "command_id_conflict"))
             if payload.get("action") in ("write_file", "read_file"):
                 if not WORKSPACE_ROOT:
                     raise ValueError("Set SHAND_WORKSPACE to enable file operations")
@@ -99,9 +97,8 @@ class Handler(BaseHTTPRequestHandler):
                 pyautogui.FAILSAFE = True
                 with LOCK:
                     result = execute(payload, pyautogui)
-            if command is not None:
-                JOURNAL.finish(command.command_id, "completed")
-            return self.respond(200, receipt(command.command_id, "completed") if command is not None else result)
+            JOURNAL.finish(command.command_id, "completed")
+            return self.respond(200, receipt(command.command_id, "completed", detail=result))
         except ProtocolError as exc:
             return self.respond(400, receipt("unknown", "rejected", exc.code, str(exc)))
         except (ValueError, KeyError, json.JSONDecodeError) as exc:
