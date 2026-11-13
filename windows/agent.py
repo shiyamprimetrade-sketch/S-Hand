@@ -18,7 +18,7 @@ from journal import Journal
 JOURNAL = Journal(os.environ.get('SHAND_JOURNAL', 'shand-commands.sqlite3'))
 
 
-def execute(action, driver):
+def execute(action, driver, is_armed=lambda: True):
     if not isinstance(action, dict):
         raise ValueError("Action must be an object")
     name = action.get("action")
@@ -33,7 +33,7 @@ def execute(action, driver):
         press_key(driver, action.get("key"))
     elif name == "hotkey":
         from key_actions import chord
-        chord(driver, action.get("keys"))
+        chord(driver, action.get("keys"), is_armed=is_armed)
     elif name in ("click", "move"):
         x, y = action.get("x"), action.get("y")
         width, height = driver.size()
@@ -106,7 +106,7 @@ class Handler(BaseHTTPRequestHandler):
                 with LOCK:
                     if not ARMED.is_set():
                         raise RuntimeError("Emergency stop activated")
-                    result = execute(payload, pyautogui)
+                    result = execute(payload, pyautogui, is_armed=ARMED.is_set)
             JOURNAL.finish(command.command_id, "completed")
             return self.respond(200, receipt(command.command_id, "completed", detail=result))
         except ProtocolError as exc:
