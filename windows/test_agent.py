@@ -21,7 +21,10 @@ class ActionTests(unittest.TestCase):
 
     def test_hotkey(self):
         execute({"action": "hotkey", "keys": ["ctrl", "s"]}, self.driver)
-        self.driver.hotkey.assert_called_once_with("ctrl", "s")
+        self.assertEqual(self.driver.keyDown.call_args_list[0].args, ("ctrl",))
+        self.assertEqual(self.driver.keyDown.call_args_list[1].args, ("s",))
+        self.assertEqual(self.driver.keyUp.call_args_list[0].args, ("s",))
+        self.assertEqual(self.driver.keyUp.call_args_list[1].args, ("ctrl",))
 
     def test_out_of_bounds(self):
         with self.assertRaises(ValueError):
