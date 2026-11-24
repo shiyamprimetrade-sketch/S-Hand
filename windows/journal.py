@@ -4,6 +4,7 @@ A command is reserved before any side effect. Uncertain interrupted commands are
 never automatically replayed. Explicit recovery must be handled by S.
 """
 import sqlite3
+from contextlib import contextmanager
 import threading
 from pathlib import Path
 
@@ -19,8 +20,14 @@ class Journal:
                 detail TEXT
             )""")
 
+    @contextmanager
     def _db(self):
-        return sqlite3.connect(self.filename, timeout=10)
+        db = sqlite3.connect(self.filename, timeout=10)
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def reserve(self, command):
         with self.lock, self._db() as db:
